@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: ubuntu:20.04
+From: ubuntu:18.04
 
 %post -c /bin/bash
 
@@ -18,27 +18,30 @@ From: ubuntu:20.04
     apt-get -y install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev python3-distutils
     git clone https://github.com/MRtrix3/mrtrix3.git
     cd mrtrix3
-    git checkout 3.0.0
+    git checkout 3.0.3
     ./configure
     ./build
-    echo "NIfTIUseSform: 1" > /etc/mrtrix.conf # prefer sform to qform when they both exist (to align with nibabel behavior. FSL maintains both--see https://community.mrtrix.org/t/inconsistent-qform-sform-on-nifti-image/1663)
     cd /
 
-    # Install LCModel
-    cd tmp
+    # Install LCModel and Basis Sets 
+    apt-get -y install wget unzip
+    # apt-get -y install libxft2:i386 lib32ncurses5 libxext6:i386 libXss
+    mkdir -p lcmodel
+    cd lcmodel
     wget http://s-provencher.com/pub/LCModel/programs/lcm-64.tar
     tar xf lcm-64.tar
-    ./install_lcmodel
-    cd /
-
-    # Install LCModel Basis Sets
-    cd tmp
+    rm lcm-64.tar
+    gunzip -c lcm-core.tar.gz | tar xf -
+    rm lcm-core.tar.gz
+    # mkdir -p .lcmodel/profiles/1
+    # mv .lcmodel/gui-defaults .lcmodel/profiles/1/ 2>/dev/null
+    # mv .lcmodel/control-defaults .lcmodel/profiles/1/ 2>/dev/null
     wget http://s-provencher.com/pub/LCModel/3t.zip
-    mv 3t.zip ~/.lcmodel/basis-sets/
-    cd ~/.lcmodel/basis-sets
     unzip 3t.zip
+    mv 3t/ basis-sets-3t/
     cd /
-    
+    # rm -r /lcmodel
+
     # Make custom folders
     mkdir -p /INPUTS
     mkdir -p /OUTPUTS
@@ -48,13 +51,14 @@ From: ubuntu:20.04
     chmod 755 /OUTPUTS
 
     # Install source code
-    apt-get -y install git gcc libpq-dev python-dev python-pip python3 python3-dev python3-pip python3-venv python3-wheel
+    apt-get -y install git gcc libpq-dev python3.8 python3.8-dev python3.8-venv python3-pip python3-wheel python3-numpy
     git clone https://github.com/MASILab/masimrs.git
     cd masimrs
-    python3 -m venv venv
+    python3.8 -m venv venv
     source venv/bin/activate
-    pip3 install wheel
-    pip install -r requirements.txt
+    pip3.8 install wheel
+    pip3.8 install --upgrade pip setuptools wheel
+    pip3.8 install -r requirements.txt
     deactivate
     cd /
 
@@ -62,6 +66,9 @@ From: ubuntu:20.04
 
     # MRTrix3
     export PATH="/mrtrix3/bin:$PATH"
+
+    # LCModel
+    export PATH="/lcmodel/.lcmodel/bin:$PATH"
 
 %runscript
 

@@ -13,15 +13,12 @@
 ##########
 
 import suspect as sus
-# from spec2nii.dicomfunctions import svs_or_CSI
 from spec2nii.dcm2niiOrientation.orientationFuncs import dcm_to_nifti_orientation
 import pydicom as pyd
 import numpy as np
 import nibabel as nib
 import nibabel.nicom.dicomwrappers as nnd
 import argparse as ap
-from scipy.signal import medfilt
-from nilearn.image import resample_to_img
 
 import os
 import subprocess
@@ -35,7 +32,7 @@ from io import StringIO
 # Useful Variables #
 ####################
 
-basis_sets_dir = '/nfs/masi/caily/projects/dm/code/mrs/basis_sets_3t'
+basis_sets_dir = '/lcmodel/basis-sets-3t'
 lcmodel_exec = 'lcmodel'
 gs_exec = 'gs'
 
