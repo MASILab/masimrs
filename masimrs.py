@@ -3,11 +3,6 @@
 # MASI Lab
 # June 3, 2021
 
-#########
-# TO DO #
-#########
-# - Tramp for absolute concentration interpretation?
-
 ##########
 # Set Up #
 ##########

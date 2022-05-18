@@ -40,7 +40,6 @@ From: ubuntu:18.04
     unzip 3t.zip
     mv 3t/ basis-sets-3t/
     cd /
-    # rm -r /lcmodel
 
     # Make custom folders
     mkdir -p /INPUTS
@@ -72,5 +71,5 @@ From: ubuntu:18.04
 
 %runscript
 
-    xvfb-run -a --server-num=$((65536+$$)) --server-args="-screen 0 1600x1280x24 -ac" bash /masimrs/run_masimrs.py "$@"
+    xvfb-run -a --server-num=$((65536+$$)) --server-args="-screen 0 1600x1280x24 -ac" bash /masimrs/run_masimrs.sh "$@"
 
