@@ -23,9 +23,8 @@ From: ubuntu:18.04
     ./build
     cd /
 
-    # Install LCModel and Basis Sets 
+    # Install LCModel (Without GUI Capabilites) and Basis Sets 
     apt-get -y install wget unzip
-    # apt-get -y install libxft2:i386 lib32ncurses5 libxext6:i386 libXss
     mkdir -p lcmodel
     cd lcmodel
     wget http://s-provencher.com/pub/LCModel/programs/lcm-64.tar
@@ -33,9 +32,6 @@ From: ubuntu:18.04
     rm lcm-64.tar
     gunzip -c lcm-core.tar.gz | tar xf -
     rm lcm-core.tar.gz
-    # mkdir -p .lcmodel/profiles/1
-    # mv .lcmodel/gui-defaults .lcmodel/profiles/1/ 2>/dev/null
-    # mv .lcmodel/control-defaults .lcmodel/profiles/1/ 2>/dev/null
     wget http://s-provencher.com/pub/LCModel/3t.zip
     unzip 3t.zip
     mv 3t/ basis-sets-3t/
