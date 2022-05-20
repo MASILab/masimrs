@@ -4,12 +4,17 @@ Perform 2D PRESS MRSI Processing for Philips Enhanced DICOM and Siemens DICOM da
 
 ## Contents
 
+* [Overview](#overview)
 * [Authors and Reference](#authors-and-reference)
 * [Containerization of Source Code](#containerization-of-source-code)
 * [Command](#command)
 * [Arguments and Options](#arguments-and-options)
 * [Outputs (Voxel-wise)](#outputs-voxel-wise)
 * [Outputs (Regional)](#outputs-regional)
+
+## Overview
+
+MASIMRS performs an analysis of 2D PRESS MRSI from Philips and Siemens DICOM data with LCModel. It converts the complex time domain data stored in the DICOMs to NIFTI files with the signal (or fourier spectrum) stored in the fourth dimension. It then processes the signal in each voxel with LCModel to compute metabolite peaks and saves each metabolite map as its own NIFTI file. If given a segmentation and a label target, MASIMRS will also perform a regional analysis by computing a weighted average regional signal based on the amount of overlap from the MRSI voxels. It will then convert this signal to NIFTI format and run it through LCModel to obtain the peaks and ratios.
 
 ## Authors and Reference
 
@@ -32,7 +37,7 @@ To build the container, we use Singularity 3.8 Community Edition with root permi
 
 To run the MASIMRS software inside the Singularity container, use the following command. Please see [below](#arguments-and-options) for more elaboration of the arguments and options.
 
-Of note, the paths input into the script should be designed relative to the *inside* of the container and files should be bound into the container: an `/INPUTS` and `/OUTPUTS` folder are provided for you. For instance, if you have an input DICOM file at `/home/Desktop/my.dcm`, it should be bound into the `/INPUTS` folder in the container with the Singularity option `--bind /home/Desktop/my.dcm:/INPUTS/my.dcm` and given as an argument to the container as `/INPUTS/my.dcm`. Similarly, if you want to save outputs with the file prefix `/home/Downloads/my_prefix`, bind `/home/Downloads/` to the `/OUTPUTS` directory in the container and provide the output prefix argument as `/OUTPUTS/my_prefix`. Binding the tmp directory is required when running the container with `--contain`.
+Of note, the paths input into the script should be designed relative to the *inside* of the container and files should be bound into the container: an `/INPUTS` and `/OUTPUTS` folder are provided for you. For instance, if you have an input DICOM MRSI file at `/home/Desktop/my.dcm`, it should be bound into the `/INPUTS` folder in the container with the Singularity option `--bind /home/Desktop/my.dcm:/INPUTS/my.dcm` and given as an argument to the container as `/INPUTS/my.dcm`. Similarly, if you want to save outputs with the file prefix `/home/Downloads/my_prefix`, bind `/home/Downloads/` to the `/OUTPUTS` directory in the container and provide the output prefix argument as `/OUTPUTS/my_prefix`. Binding the `/tmp` directory is required when running the container with `--contain` which is preferred.
 
     singularity run 
     --cleanenv 
