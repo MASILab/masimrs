@@ -8,7 +8,8 @@ Perform 2D PRESS MRSI Processing for Philips Enhanced DICOM and Siemens DICOM da
 * [Containerization of Source Code](#containerization-of-source-code)
 * [Command](#command)
 * [Arguments and Options](#arguments-and-options)
-* [Outputs](#outputs)
+* [Outputs (Voxel-wise)](#outputs-voxel-wise)
+* [Outputs (Regional)](#outputs-regional)
 
 ## Authors and Reference
 
@@ -65,7 +66,9 @@ Do NOT perform a voxel-wise analysis of metabolite ratios.
 
 **-s /seg.nii.gz 1+2,3** or **--seg /seg.nii.gz 1+2,3**
 
-This allows MASIMRS to perform an optional regional analysis and takes two arguments: `/seg.nii.gz` and `1+2,3`. The first, `/seg.nii.gz`, is a path to a tissue segmentation NIFTI file co-registered to `/INPUTS/my.dcm`. The second is a plus (`+`) or comma (`,`) separated list of labels in `/seg.nii.gz` corresponding to the regions intended to be analyzed. For `1+2,3`, regions 1 and 2 will be considered as one region separately from region 3.
+This allows MASIMRS to perform an optional regional analysis and takes two arguments: `/seg.nii.gz` and `1+2,3`. The first, `/seg.nii.gz`, is a path relative to the *inside* of the container to a tissue segmentation NIFTI file co-registered to `/INPUTS/my.dcm`. The second is a plus (`+`) or comma (`,`) separated list of labels in `/seg.nii.gz` corresponding to the regions intended to be analyzed. For `1+2,3`, regions 1 and 2 will be considered as one region separately from region 3.
+
+This option can be used multiple times to analyze multiple regions from multiple segmentation files in one command.
 
 **-r REF** or **--ref REF**
 
@@ -85,22 +88,111 @@ Output status to console as program runs.
 
 **-h** or **--help**
 
-## Outputs
+## Outputs (Voxel-wise)
 
-**/OUTPUTS/my_prefix.pdf**
+* **`/OUTPUTS/my_prefix`** is variable and denotes the prefix output argument
+* **`MET`** is variable and denotes the labels of metabolites fit with LCModel
 
-Voxel-wise LCModel outputs summarizing spectra, fit, and ratios.
+**Raw data formatted as NIFTI**
 
-**/OUTPUTS/my_prefix_MET.nii.gz**
+These outputs are repeated, swapping `met` for `h2o` in the file names, for the water reference for Philips data.
 
-3D NIFTI images generated during voxel-wise analysis, one for each metabolite peak fit by LCModel, indicating the peak height computed by LCModel.
+* **`/OUTPUTS/my_prefix`_met_signal_abs.nii.gz**: A 4D NIFTI file with the magnitude of the raw spectroscopy data in the time domain.
 
-**/OUTPUTS/my_prefix_MET_SD.nii.gz**
+* **`/OUTPUTS/my_prefix`_met_signal_ang.nii.gz**: A 4D NIFTI file with the phase of the raw spectroscopy data in the time domain.
 
-3D NIFTI images generated during voxel-wise analysis, one for each metabolite peak fit by LCModel, indicating the %SD metric computed by LCModel.
+* **`/OUTPUTS/my_prefix`_met_signal_real.nii.gz**: A 4D NIFTI file with the real component of the raw spectroscopy data in the time domain.
 
-**/OUTPUTS/my_prefix.ctrl**
+* **`/OUTPUTS/my_prefix`_met_signal_imag.nii.gz**: A 4D NIFTI file with the imaginary component of the raw spectroscopy data in the time domain.
 
-A summary of the LCModel control parameters used in the voxel-wise analysis.
+* **`/OUTPUTS/my_prefix`_met_signal_abs_sum.nii.gz**: `/OUTPUTS/my_prefix_met_signal_abs.nii.gz` summed in the 4th dimension.
 
-**/OUTPUTS/my_prefix_lcm.ppm**, **/OUTPUTS/my_prefix_lcm_spectra.nii.gz**, **/OUTPUTS/my_prefix_lcm_fit.nii.gz**, **/OUTPUTS/my_prefix_lcm_baseline.nii.gz**
+* **`/OUTPUTS/my_prefix`_met.ppm**: A text file listing the PPM of the raw data.
+
+* **`/OUTPUTS/my_prefix`_met_spectra_abs.nii.gz**: A 4D NIFTI file with the magnitude of the raw spectroscopy data in the fourier domain.
+
+* **`/OUTPUTS/my_prefix`_met_spectra_ang.nii.gz**: A 4D NIFTI file with the phase of the raw spectroscopy data in the fourier domain.
+
+* **`/OUTPUTS/my_prefix`_met_spectra_real.nii.gz**: A 4D NIFTI file with the real component of the raw spectroscopy data in the fourier domain.
+
+* **`/OUTPUTS/my_prefix`_met_spectra_imag.nii.gz**: A 4D NIFTI file with the imaginary component of the raw spectroscopy data in the fourier domain.
+
+* **`/OUTPUTS/my_prefix`_met_spectra_abs_sum.nii.gz**: `/OUTPUTS/my_prefix_met_spectra_abs.nii.gz` summed in the 4th dimension.
+
+**LCModel inputs**
+
+* **`/OUTPUTS/my_prefix`.ctrl**: A summary of the LCModel control parameters used in the voxel-wise analysis.
+
+* **`/OUTPUTS/my_prefix`_sl1.raw**: The RAW file containing metabolite spectra data for LCModel.
+
+* **`/OUTPUTS/my_prefix`_sl1.h2o**: The RAW file containing water reference spectra data for LCModel (Philips only).
+
+**LCModel spectra outputs**
+
+* **`/OUTPUTS/my_prefix`_lcm.ppm**: A text file listing the PPM of the data processed by LCModel
+
+* **`/OUTPUTS/my_prefix`_lcm_spectra.nii.gz**: A 4D NIFTI file with the spectra data converted by LCModel for each voxel. The fourth dimension contains the spectra sampled at the PPM in `/OUTPUTS/my_prefix_lcm.ppm`.
+
+* **`/OUTPUTS/my_prefix`_lcm_fit.nii.gz**: A 4D NIFTI file with the spectra data fit by LCModel for each voxel. The fourth dimension contains the spectra sampled at the PPM in `/OUTPUTS/my_prefix_lcm.ppm`.
+
+* **`/OUTPUTS/my_prefix`_lcm_baseline.nii.gz**: A 4D NIFTI file with the spectra baseline fit by LCModel for each voxel. The fourth dimension contains the baseline sampled at the PPM in `/OUTPUTS/my_prefix_lcm.ppm`.
+
+**LCModel metabolite outputs**
+
+* **`/OUTPUTS/my_prefix`_`MET`.nii.gz**: 3D NIFTI images generated during voxel-wise analysis, one for each metabolite peak fit by LCModel, indicating the peak height computed by LCModel.
+
+* **`/OUTPUTS/my_prefix`_`MET`_SD.nii.gz**: 3D NIFTI images generated during voxel-wise analysis, one for each metabolite peak fit by LCModel, indicating the %SD metric computed by LCModel.
+
+* **`/OUTPUTS/my_prefix`.pdf**: A PDF document showing the voxel-wise LCModel outputs summarizing spectra, fit, and ratios.
+
+## Outputs (Regional)
+
+* **`seg`** is variable and denotes the file name without extension passed into `--seg`
+* **`lbl`** is variable and denotes the string of labels passed into `--seg`
+* **`REF`** is variable and denotes the string passed into `--ref`
+
+**Raw data formatted as text files**
+
+These outputs are repeated once for each designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`.signal**: A text file containing the complex time domain signal of the designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`.spectra**: A text file containing the complex fourier domain signal of the designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`.ppm**: A text file containing the PPM of the spectra.
+
+**Intermediates during weighted average pooling**
+
+These outputs are repeated once for each designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`_mask.nii.gz**: A 3D NIFTI file masking the designated region. 
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`_weights.nii.gz**: A 3D NIFTI file indicating the contributions of each voxel to the weighted average.
+
+**LCModel inputs**
+
+These outputs are repeated once for each designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`.ctrl**: A summary of the LCModel control parameters used in the analysis for the designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`_sl1.raw**: The RAW file containing metabolite spectra data for LCModel for the designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`_sl1.h2o**: The RAW file containing water reference spectra data for LCModel for the designated region (Philips only).
+
+**LCModel outputs**
+
+These outputs are repeated once for each designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`.lcm_ppm**: A text file listing the PPM of the data processed by LCModel for the designated region
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`.lcm_spectra**: A text file containing the spectra data converted by LCModel corresponding to the PPM in `/OUTPUTS/my_prefix_seg_lbl.lcm_ppm` for the designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`.lcm_fit**: A text file containing the spectra data fit by LCModel corresponding to the PPM in `/OUTPUTS/my_prefix_seg_lbl.lcm_ppm` for the designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`.lcm_baseline**: A text file containing the spectra baseline fit by LCModel corresponding to the PPM in `/OUTPUTS/my_prefix_seg_lbl.lcm_ppm` for the designated region.
+
+* **`/OUTPUTS/my_prefix`\_`seg`\_`lbl`.pdf**: LCModel print-out summarizing the spectra, fit, and ratios for the designated region.
+
+**Metabolite output**
+
+* **`/OUTPUTS/my_prefix`\_`REF`\_ratios_by_label.csv**: A CSV file indicating the metabolite peaks, ratios, and %SD for all regions designated.
