@@ -163,6 +163,31 @@ def load_dicom_siemens(dcm_file):
     data.metadata = _get_title(dcm_file)
     return data
 
+#############################
+# Transfer MRSData Metadata #
+#############################
+
+def transfer_header(sus_data, np_data):
+
+    """
+    Transfer MRSData header information to a new numpy array
+
+    Parameters
+    ----------
+    sus_data : MRSData
+        Data in MRSData format with target header
+    np_data : Numpy array
+        Data in Numpy array to which to apply header
+    
+    Returns
+    -------
+    transferred_data : MRSData
+        np_data with header information from sus_data
+    """
+
+    transferred_data = sus.MRSData(np_data, sus_data.dt, sus_data.f0, ppm0=sus_data.ppm0, te=sus_data.te, tr=sus_data.tr, transform=sus_data.transform, metadata=sus_data.metadata)
+    return transferred_data
+
 ########################################################
 # Convert MRSData to Real and Imaginary Nibabel Images #
 ########################################################
@@ -224,23 +249,23 @@ def nifti_image_siemens(data):
 #       canceled it. So in order to keep the NIFTI and LCModel data the same, we're going to
 #       keep BRUKER = F and do the conjugation ourselves.
 
-def save_nifti_philips(nii_dir, nii_prefix, data):
+def save_nifti_philips(nii_dir, nii_prefix, data, grid_file=None, grid_interp=None, grid_fill='nan'):
 
     mrs_data = data[0, :, :, :, :] # 0 = metabolite, 1 = water; treat "data rows = 1" dim as 1 slice (r, c, s, freq)
     h2o_data = data[1, :, :, :, :]
 
-    _write_data_nii(nii_dir, '{}_met'.format(nii_prefix), mrs_data, data.transform, data.frequency_axis_ppm())
-    _write_data_nii(nii_dir, '{}_h2o'.format(nii_prefix), h2o_data, data.transform, data.frequency_axis_ppm())
+    _write_data_nii(nii_dir, '{}_met'.format(nii_prefix), mrs_data, data.transform, data.frequency_axis_ppm(), grid_file=grid_file, grid_interp=grid_interp, grid_fill=grid_fill)
+    _write_data_nii(nii_dir, '{}_h2o'.format(nii_prefix), h2o_data, data.transform, data.frequency_axis_ppm(), grid_file=grid_file, grid_interp=grid_interp, grid_fill=grid_fill)
 
-def save_nifti_siemens(nii_dir, nii_prefix, data):
+def save_nifti_siemens(nii_dir, nii_prefix, data, grid_file=None, grid_interp=None, grid_fill='nan'):
 
-    _write_data_nii(nii_dir, '{}_met'.format(nii_prefix), data, data.transform, data.frequency_axis_ppm())
+    _write_data_nii(nii_dir, '{}_met'.format(nii_prefix), data, data.transform, data.frequency_axis_ppm(), grid_file=grid_file, grid_interp=grid_interp, grid_fill=grid_fill)
 
 ####################################
 # Save MRSData into LCModel format #
 ####################################
 
-def save_lcmodel_philips(lcm_dir, lcm_prefix, data):
+def save_lcmodel_philips(lcm_dir, lcm_prefix, data, basis_file=None):
 
     """
     Save a Philips MRSData object from load_dicom_philips() for LCModel.
@@ -253,6 +278,8 @@ def save_lcmodel_philips(lcm_dir, lcm_prefix, data):
         The root of the file name
     data : MRSData object
         The output of load_dicom_philips()
+    basis_file : str
+        Path to a custom basis file
     
     Returns
     -------
@@ -265,10 +292,11 @@ def save_lcmodel_philips(lcm_dir, lcm_prefix, data):
 
     mrs_data = data[0, :, :, :, :] # Separate frames, treat "spectral rows = 1" as slice dim
     h2o_data = data[1, :, :, :, :]
-    basis_file = _get_basis(data.te)
+    if basis_file is None:
+        basis_file = _get_basis(data.te)
     return _write_lcmodel_files(lcm_dir, lcm_prefix, basis_file, mrs_data, h2o_data=h2o_data, conj=True)
 
-def save_lcmodel_siemens(lcm_dir, lcm_prefix, data):
+def save_lcmodel_siemens(lcm_dir, lcm_prefix, data, basis_file=None):
 
     """
     Save a Siemens MRSData object from load_dicom_siemens() for LCModel.
@@ -281,6 +309,8 @@ def save_lcmodel_siemens(lcm_dir, lcm_prefix, data):
         The root of the file name
     data : MRSData object
         The output of load_dicom_siemens()
+    basis_file : str
+        Path to a custom basis file
 
     Returns
     -------
@@ -290,7 +320,8 @@ def save_lcmodel_siemens(lcm_dir, lcm_prefix, data):
 
     # Unlike Philips, Siemens data doesn't come with a water reference
 
-    basis_file = _get_basis(data.te)
+    if basis_file is None:
+        basis_file = _get_basis(data.te)
     return _write_lcmodel_files(lcm_dir, lcm_prefix, basis_file, data, conj=False)
 
 ###############
@@ -457,7 +488,7 @@ def coo2nii(coo_files, aff):
 
     # Compute total "energy"
 
-    sum_img = np.sum(data_img, axis=3)
+    sum_img = np.sum(np.abs(data_img), axis=3)
 
     # Build and Save NIIs
 
@@ -653,7 +684,7 @@ def _get_title(dcm_file):
     
     subj = dataset[0x0010, 0x0020].value
 
-    return '{}, scanned on {}/{}/{} at {}:{}:{} ({})'.format(subj, mm, dd, yyyy, hr, min, sec, desc)
+    return '{} scanned on {}/{}/{} at {}:{}:{} ({})'.format(subj, mm, dd, yyyy, hr, min, sec, desc)
 
 def _write_lcmodel_files(lcm_dir, lcm_prefix, basis_file, mrs_data, h2o_data=None, conj=False):
 
@@ -927,7 +958,7 @@ def _nii(img, aff):
 
     return nib.Nifti1Image(np.transpose(img, transpose_idxs), affine=aff) 
 
-def _write_data_nii(nii_dir, nii_prefix, time_img, aff, ppm):
+def _write_data_nii(nii_dir, nii_prefix, time_img, aff, ppm, grid_file=None, grid_interp=None, grid_fill='nan'):
 
     # Save Complex Time Domain Data
 
@@ -981,13 +1012,24 @@ def _write_data_nii(nii_dir, nii_prefix, time_img, aff, ppm):
     ppm_file = os.path.join(nii_dir, '{}.ppm'.format(nii_prefix))
     np.savetxt(ppm_file, ppm)
 
+    # Regrid if needed
+
+    if grid_file is not None and grid_interp is not None:
+        grid_nii = nib.load(grid_file)
+        time_abs_sum_grid_nii = _nii2ref(time_abs_sum_nii, grid_nii, nii_dir, interp=grid_interp, fill=grid_fill)
+        time_abs_sum_grid_nii_file = os.path.join(nii_dir, '{}_signal_abs_sum_grid.nii.gz'.format(nii_prefix))
+        nib.save(time_abs_sum_grid_nii, time_abs_sum_grid_nii_file)
+        spec_abs_sum_grid_nii = _nii2ref(spec_abs_sum_nii, grid_nii, nii_dir, interp=grid_interp, fill=grid_fill)
+        spec_abs_sum_grid_nii_file = os.path.join(nii_dir, '{}_spectra_abs_sum_grid.nii.gz'.format(nii_prefix))
+        nib.save(spec_abs_sum_grid_nii, spec_abs_sum_grid_nii_file)
+
 def _lcm2idxs(lcm_file, ext):
 
     # Extract voxel location from each LCM (csv or coord) file as row, col, slice, changing from 1 (LCModel) to 0 (python) indexed
 
     return np.array([int(i)-1 for i in lcm_file.split('.{}'.format(ext))[0].split('_sl')[-1].replace('_', '-').split('-')])[[1, 2, 0]]
 
-def _nii2ref(in_nii, ref_nii, out_dir, interp='cubic'): # "regrid"
+def _nii2ref(in_nii, ref_nii, out_dir, interp='cubic', fill='nan'): # "regrid"
 
     # Make temporary directory
     
@@ -1001,7 +1043,7 @@ def _nii2ref(in_nii, ref_nii, out_dir, interp='cubic'): # "regrid"
     nib.save(ref_nii, ref_file)
     nii_regrid_file = os.path.join(tmp_dir, 'img_regrid.nii.gz')
     quiet_str = '-quiet' if not VERBOSE else ''
-    grid_cmd = 'mrgrid {} regrid -template {} -strides {} {} -interp {} -fill nan -force {}'.format(nii_file, ref_file, ref_file, nii_regrid_file, interp, quiet_str)
+    grid_cmd = 'mrgrid {} regrid -template {} -strides {} {} -interp {} -fill {} -force {}'.format(nii_file, ref_file, ref_file, nii_regrid_file, interp, fill, quiet_str)
     _run(grid_cmd)
 
     # Load image into memory before clearing from disk
@@ -1291,7 +1333,10 @@ if __name__ == '__main__':
     parser.add_argument('scanner_type', metavar='scanner_type', help='string indicating scanner type ("philips" or "siemens")')
     parser.add_argument('-x', '--novox', action='store_true', help='omit voxel-wise analysis')
     parser.add_argument('-s', '--seg', metavar=('/seg.nii.gz', '1+2,3'), action='append', nargs=2, help='path to segmentation file and label(s) indicating regions to analyze together (+) or separately (,) (can be used multiple times, default = do NOT perform regional analysis)')
+    parser.add_argument('-m', '--mask', metavar='/input/brain_mask.nii.gz', default=None, help='path to the input NIFTI file masking out the brain for lipid interference removal before regional analysis (default = do NOT remove lipid interference)')
+    parser.add_argument('-b', '--basis', metavar='/custom/set.basis', default=None, help='path to the custom LCModel basis sets to use (default = Provencher basis set with matching TE)')
     parser.add_argument('-r', '--ref', metavar='REF', default='Cr+PCr', help='string indicating which LCModel metabolite to use when computing ratios (default = Cr+PCr)')
+    parser.add_argument('-g', '--grid', metavar=('/target.nii.gz', 'interp'), nargs=2, default=None, help='path to target NIFTI to which to regrid (interp = nearest or linear or cubic) the voxel-wise 3D maps for visualization (signal and spectra abs sums) (default = do NOT regrid)')
     parser.add_argument('-n', '--nthreads', metavar='N', default=1, help='positive integer indicating number of threads to use for voxel-wise fitting (default = 1)')
     parser.add_argument('-v', '--verbose', action='store_true', help='print progress to console')
     args = parser.parse_args()
@@ -1331,6 +1376,11 @@ if __name__ == '__main__':
     if num_threads < 1:
         raise MRSException('Number of threads must be a positive integer. Aborting.')
 
+    mask_file = args.mask
+    if mask_file is not None:
+        if not os.path.exists(mask_file):
+            raise MRSException('Input brain mask {} does not exist. Aborting.'.format(mask_file))
+
     if args.seg is not None:
         seg_arg = args.seg
         seg_files = [s[0] for s in seg_arg]
@@ -1349,7 +1399,22 @@ if __name__ == '__main__':
         seg_files = []
         seg_lbls = []
 
+    basis_file = args.basis
+    if basis_file is not None:
+        if not os.path.exists(basis_file):
+            raise MRSException('Custom basis file {} does not exist. Aborting.'.format(basis_file))
+
     ratio_ref = args.ref
+
+    if args.grid is not None:
+        grid_file, grid_interp = args.grid
+        if not os.path.exists(grid_file):
+            raise MRSException('Grid target file {} does not exist. Aborting.'.format(grid_file))
+        if not grid_interp in ['nearest', 'linear', 'cubic']:
+            raise MRSException('Grid interp must be either nearest, linear, or cubic but {} was given. Aborting.'.format(grid_interp))
+    else:
+        grid_file = None
+        grid_interp = None
 
     no_voxel = args.novox
 
@@ -1366,8 +1431,16 @@ if __name__ == '__main__':
     _print('LOADING DICOM...')                              # Load DICOM
     data = load_dicom(dcm_file)
     
+    svs = np.prod(data.shape[-4:-1]) == 1
+    if svs:
+        _print('SVS DETECTED...')
+        grid_fill = '0'
+    else:
+        _print('CSI DETECTED...')
+        grid_fill = 'nan'
+
     _print('SAVING AS NIFTI...')                            # Save data as NIFTI
-    save_nifti(out_dir, out_prefix, data)
+    save_nifti(out_dir, out_prefix, data, grid_file=grid_file, grid_interp=grid_interp, grid_fill=grid_fill)
 
     ###########################
     # Run Voxel-wise Analysis #
@@ -1380,17 +1453,25 @@ if __name__ == '__main__':
         _print('*******************************')
 
         _print('SAVING LCMODEL FILES...')                       # Save LCModel Files
-        lcm_files = save_lcmodel(out_dir, out_prefix, data)
+        lcm_files = save_lcmodel(out_dir, out_prefix, data, basis_file)
 
         _print('RUNNING LCMODEL...')                            # Run LCModel
         with Pool(num_threads) as p:
             p.map(run_lcmodel, lcm_files['ctrl'])
 
-        _print('REFORMATTING LCMODEL FILES...')                         # Clean up LCModel files
-        lcm_files['pdf'] = ps2pdf(lcm_files['ps'])                      # Clean up PS files
-        lcm_files['nii'] = csv2nii(lcm_files['csv'], data.transform)    # Clean up CSV files
-        coo2nii(lcm_files['coo'], data.transform)                       # Clean up COORD files
-        txt_file = ctrl2txt(lcm_files['ctrl'])                          # Clean up CONTROL files
+        _print('REFORMATTING LCMODEL FILES...')                                                  # Clean up LCModel files
+        
+        lcm_files['pdf'] = ps2pdf(lcm_files['ps'])                                               # Clean up PS files
+
+        if svs:                                                                         
+            coo2txt(lcm_files['coo'], dummy=False)                                               # Clean up COORD files
+            csv_lbls, csv_lines = _csv2line(lcm_files['csv'], data.metadata, 'SVS', dummy=False) # Clean up CSV files
+            csv_file = _lines2csv([csv_lbls], [csv_lines], ratio_ref, out_dir, out_prefix)
+        else:
+            coo2nii(lcm_files['coo'], data.transform)                                            # Clean up COORD files
+            lcm_files['nii'] = csv2nii(lcm_files['csv'], data.transform)                         # Clean up CSV files
+
+        txt_file = ctrl2txt(lcm_files['ctrl'])                                                   # Clean up CONTROL files
 
     else:
 
@@ -1412,11 +1493,69 @@ if __name__ == '__main__':
 
         _print('IDENTIFYING VOXEL INDICES...')
 
-        idx_nii = _mrs2idx(data)
+        idx_nii = _mrs2idx(data) # in NIFTI (i.e. T1) space
         idx_img = idx_nii.get_fdata()
         idx_aff = idx_nii.affine
 
+        # Remove voxels in brain mask with high lipid signal
+
+        if mask_file is not None:
+
+            _print('REMOVING LIPID INTERFERENCE...')
+
+            ppm = data.frequency_axis_ppm()
+            spec = np.real(data.spectrum())
+            if len(spec.shape) == 5:
+                spec = spec[0, :, :, :, :]
+
+            lipid_ppm_start_idx = np.argmin(np.abs(ppm-1.8))
+            lipid_ppm_end_idx   = np.argmin(np.abs(ppm-0.2))
+            lipid_ppm = ppm[lipid_ppm_start_idx:lipid_ppm_end_idx+1]
+            lipid_spec = spec[:, :, :, lipid_ppm_start_idx:lipid_ppm_end_idx+1]
+            lipid_rmse = np.zeros(lipid_spec.shape[:-1])
+            for k0 in range(lipid_spec.shape[0]):
+                for k1 in range(lipid_spec.shape[1]):
+                    for k2 in range(lipid_spec.shape[2]):
+                        x = lipid_ppm
+                        y = lipid_spec[k0, k1, k2, :]
+                        _, fit_info = np.polynomial.polynomial.Polynomial.fit(x, y, 1, full=True) # sse = fit_info[0], *** considering using 0th order poly (aka de-mean) vs 1st (aka line)
+                        lipid_rmse[k0, k1, k2] = np.sqrt(fit_info[0] / len(x))
+            
+            mask_nii = nib.load(mask_file)
+            lipid_mask_nii = _nii2ref(mask_nii, idx_nii, out_dir, interp='nearest') # (mask space to idx in nii/t1 space, no change)
+            lipid_mask = np.transpose(lipid_mask_nii.get_fdata().astype(bool), (1, 0, 2)) # (nii/t1 -> sus, transpose)
+            lipid_rmse[np.logical_not(lipid_mask)] = np.nan # *** consider not using
+
+            # Notes: so far for outliers:
+            #   using quartile:
+            #   - rsme >>> area approach
+            #   - trying 1st order with mask... works fine! <-- let's go with this
+            #   - trying 0th order with mask... results at first glance not as nice as 1st order
+
+            # Quartile 
+            lipid_rmse_upq = np.nanpercentile(lipid_rmse, 75)
+            lipid_rmse_loq = np.nanpercentile(lipid_rmse, 25)
+            lipid_rmse_iqr = lipid_rmse_upq - lipid_rmse_loq
+            lipid_outliers_img = np.logical_or(lipid_rmse > lipid_rmse_upq + 1.5*lipid_rmse_iqr, lipid_rmse < lipid_rmse_loq - 1.5*lipid_rmse_iqr)
+
+            # MAD
+            # lipid_area_med = np.nanmedian(lipid_area)
+            # lipid_area_mad = 1.4826*np.nanmedian(np.abs(lipid_area - lipid_area_med))
+            # lipid_outliers_img = np.abs(lipid_area - lipid_area_med) > 3*lipid_area_mad
+
+            # lipid_outliers_img = np.expand_dims(lipid_outliers_img, axis=2) # in sus space
+
+        else:
+
+            _print('SKIPPING LIPID INTERFERENCE REMOVAL...')
+            lipid_outliers_img = np.ones((idx_img.shape[1], idx_img.shape[0], idx_img.shape[2])) # declare in sus space to account for _nii() in next line
+
+        lipid_outliers_nii = _nii(lipid_outliers_img.astype(int), idx_nii.affine) # sus to nii/t1 space, account for transpose
+        nib.save(lipid_outliers_nii, os.path.join(out_dir, '{}_outliers.nii.gz'.format(out_prefix)))
+
         # Prep for one output CSV file
+
+        _print('PREPARING POOLING ANALYSIS...')
 
         csv_lbls = []
         csv_lines = []
@@ -1429,11 +1568,17 @@ if __name__ == '__main__':
 
             # Regrid index image to segmentation file
 
-            _print('REGRIDDING VOXEL INDICES TO {}...'.format(seg_file))
+            _print('REGRIDDING MRS VOXEL INDICES TO {}...'.format(seg_file))
 
             seg_nii = nib.load(seg_file)
-            idx_regrid_nii = _nii2ref(idx_nii, seg_nii, out_dir, interp='nearest') # Any time converting between MRS and NII, need to account for transposition
+            
+            idx_regrid_nii = _nii2ref(idx_nii, seg_nii, out_dir, interp='nearest') # regrid nii/idx to nii/t1, no transposition
             idx_regrid_img = idx_regrid_nii.get_fdata()
+            # nib.save(idx_regrid_nii, os.path.join(out_dir, 'idx_regrid.nii.gz')) # *** sanity check
+
+            lipid_outliers_regrid_nii = _nii2ref(lipid_outliers_nii, seg_nii, out_dir, interp='nearest') # regrid nii/lipid to nii/t1, no transposition
+            lipid_outliers_regrid_img = lipid_outliers_regrid_nii.get_fdata()
+            # nib.save(lipid_outliers_regrid_nii, os.path.join(out_dir, 'outliers_regrid.nii.gz')) # *** sanity check
 
             # Then for each label in the segmentation file
 
@@ -1453,7 +1598,7 @@ if __name__ == '__main__':
 
                 seg_img = np.isin(seg_nii.get_fdata(), seg_lbl)
                 nib.save(nib.Nifti1Image(seg_img.astype(float), seg_nii.affine), os.path.join(out_dir, '{}_mask.nii.gz'.format(seg_prefix)))
-                seg_idxs = idx_regrid_img[seg_img] 
+                seg_idxs = idx_regrid_img[np.logical_and(seg_img, np.logical_not(lipid_outliers_regrid_img))] # all in t1 space already
                 seg_idxs = seg_idxs[np.logical_not(np.isnan(seg_idxs))].astype(int)
                 seg_idxs_unique = np.unique(seg_idxs)
                 idx_count_img = np.zeros_like(idx_img)
@@ -1474,7 +1619,7 @@ if __name__ == '__main__':
                 if overlap_found:
 
                     _print('OVERLAP FOUND, POOLING TIME DOMAIN SIGNALS WITH WEIGHTED AVERAGE...')
-                    data_weights = _idx2mrs(idx_weight_nii, data) # Any time converting between MRS and NII, need to account for transposition
+                    data_weights = _idx2mrs(idx_weight_nii, data) # Any time converting between MRS and NII, need to account for transposition (nii/t1 to sus/data)
                     data_weighted = data * data_weights
                     data_weighted_avg = np.mean(data_weighted, axis=(-2, -3, -4), keepdims=True)
                     data_weighted_avg.metadata = 'Weighted average signal in label(s) {} from {} in {}'.format(seg_lbl_name, seg_file_name, data_weighted_avg.metadata)
@@ -1503,7 +1648,7 @@ if __name__ == '__main__':
                 # Run LCModel for the weighted average, with consideration that there's only one spectra
 
                 _print('RUNNING LCMODEL...')
-                lcm_files = save_lcmodel(out_dir, seg_prefix, data_weighted_avg)                # Save LCModel files
+                lcm_files = save_lcmodel(out_dir, seg_prefix, data_weighted_avg, basis_file)    # Save LCModel files
                 run_lcmodel(lcm_files['ctrl'][0])                                               # Run LCModel
 
                 # Clean LCModel Outputs, with consideration that there's only one spectra or if no overlap was found
