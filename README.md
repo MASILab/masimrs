@@ -55,7 +55,7 @@ Of note, the paths input into the script should be designed relative to the *ins
 
 **/INPUTS/my.dcm**
 
-Path to the Philips or Siemens 2D CSI data in enhancd DICOM format relative to the *inside* of the container.
+Path to the Philips or Siemens 2D CSI data in enhanced DICOM format relative to the *inside* of the container.
 
 **/OUTPUTS/my_prefix**
 
