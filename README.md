@@ -16,9 +16,11 @@ Perform 2D PRESS MRSI Processing for Philips Enhanced DICOM and Siemens DICOM da
 
 MASIMRS performs an analysis of 2D PRESS MRSI from Philips and Siemens DICOM data with LCModel. It converts the complex time domain data stored in the DICOMs to NIFTI files with the signal (or fourier spectrum) stored in the fourth dimension. It then processes the signal in each voxel with LCModel to compute metabolite peaks and saves each metabolite map as its own NIFTI file. If given a segmentation and a label target, MASIMRS will also perform a regional analysis by computing a weighted average regional signal based on the amount of overlap from the MRSI voxels with consideration of lipid intereference. It will then convert this signal to NIFTI format and run it through LCModel to obtain the peaks and ratios.
 
-## Authors and Reference
+## Authors and References
 
 [Cai LY](mailto:leon.y.cai@vanderbilt.edu), Tanase C, Anderson AW, Patel NJ, Lee CA, Jones RS, LeStourgeon LM, Mahon A, Taki I, Juvera J, Pruthi S, Gwal K, Ozturk A, Kang H, Rewers A, Rewers MJ, Alonso GT, Glaser N, Ghetti S, Jaser SS, Landman BA, Jordan LC. Exploratory Multisite MR Spectroscopic Imaging Shows White Matter Neuroaxonal Loss Associated with Complications of Type 1 Diabetes in Children. American Journal of Neuroradiology. 2023 Jul 1;44(7):820-7.
+
+Cai LY, Del Tufo SN, Barquero L, D'Archangel M, Sachs L, Cutting LE, Glaser N, Ghetti S, Jaser SS, Anderson AW, Jordan LC, Landman BA. Spatiospectral image processing workflow considerations for advanced MR spectroscopy of the brain. Medical Imaging: Image Processing. 2023 Aug 1. In submission.
 
 [Medical-image Analysis and Statistical Interpretation (MASI) Lab](https://my.vanderbilt.edu/masi), Vanderbilt University, Nashville, TN, USA
 
