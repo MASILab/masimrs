@@ -502,7 +502,7 @@ def coo2nii(coo_files, aff):
     nib.save(data_nii, data_nii_file)
 
     sum_nii = _nii(sum_img, aff)
-    sum_nii_file = '{}_lcm_spectra_sum.nii.gz'.format(nii_prefix)
+    sum_nii_file = '{}_lcm_spectra_abs_sum.nii.gz'.format(nii_prefix)
     nib.save(sum_nii, sum_nii_file)
 
     fit_nii = _nii(fit_img, aff)
