@@ -20,7 +20,7 @@ MASIMRS performs an analysis of 2D PRESS MRSI from Philips and Siemens DICOM dat
 
 [Cai LY](mailto:leon.y.cai@vanderbilt.edu), Tanase C, Anderson AW, Patel NJ, Lee CA, Jones RS, LeStourgeon LM, Mahon A, Taki I, Juvera J, Pruthi S, Gwal K, Ozturk A, Kang H, Rewers A, Rewers MJ, Alonso GT, Glaser N, Ghetti S, Jaser SS, Landman BA, Jordan LC. Exploratory Multisite MR Spectroscopic Imaging Shows White Matter Neuroaxonal Loss Associated with Complications of Type 1 Diabetes in Children. American Journal of Neuroradiology. 2023 Jul 1;44(7):820-7.
 
-Cai LY, Del Tufo SN, Barquero L, D'Archangel M, Sachs L, Cutting LE, Glaser N, Ghetti S, Jaser SS, Anderson AW, Jordan LC, Landman BA. Spatiospectral image processing workflow considerations for advanced MR spectroscopy of the brain. Medical Imaging: Image Processing. 2023 Aug 1. In submission.
+Cai LY, Del Tufo SN, Barquero L, D'Archangel M, Sachs L, Cutting LE, Glaser N, Ghetti S, Jaser SS, Anderson AW, Jordan LC, Landman BA. Spatiospectral image processing workflow considerations for advanced MR spectroscopy of the brain. Medical Imaging: Image Processing. 2023 Aug 1. [In submission](https://www.biorxiv.org/content/10.1101/2023.09.07.556701v1).
 
 [Medical-image Analysis and Statistical Interpretation (MASI) Lab](https://my.vanderbilt.edu/masi), Vanderbilt University, Nashville, TN, USA
 
